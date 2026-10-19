@@ -12,8 +12,8 @@ android {
         applicationId = "com.satya.ramayana"
         minSdk = 26
         targetSdk = 37
-        versionCode = 5
-        versionName = "2.2"
+        versionCode = 6
+        versionName = "2.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

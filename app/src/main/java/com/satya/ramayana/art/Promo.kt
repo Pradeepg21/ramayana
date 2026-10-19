@@ -23,35 +23,131 @@ object Promo {
     /** Icon art is drawn in a 1000x1000 space. Adaptive icons keep the middle 610 visible. */
     private const val S = 1000f
 
-    fun iconBackground(c: Canvas) {
+    /** One launcher-icon design: a background layer and a foreground layer kept inside the safe zone. */
+    class IconStyle(val background: (Canvas) -> Unit, val foreground: (Canvas) -> Unit)
+
+    val icons = listOf(
+        IconStyle(::sunburst, ::blessing),
+        IconStyle(::sunburst, ::archer),
+        IconStyle(::nightSky, ::skyArcher),
+        IconStyle(::medallion, ::emblem),
+    )
+
+    private fun sunburst(c: Canvas) {
         c.drawRect(0f, 0f, S, S, P.vgrad3(0f, S, 0xFFFFC65C.toInt(), 0xFFF2780C.toInt(), 0xFF9C1C24.toInt()))
-        // sun rays fanning out from behind Ram's head
-        val cx = S / 2
-        val cy = 430f
+        rays(c, S / 2, 430f, 0x1FFFF3C4)
+        c.drawCircle(S / 2, 430f, 420f, P.glow(S / 2, 430f, 420f, 0xFFFFF3C4.toInt(), 0.9f))
+    }
+
+    private fun rays(c: Canvas, cx: Float, cy: Float, color: Int) {
         for (k in 0 until 24) {
             val a0 = k * 2 * PI / 24
             val a1 = a0 + PI / 24
             path.reset()
             path.moveTo(cx, cy)
-            path.lineTo(cx + (cos(a0) * 900).toFloat(), cy + (sin(a0) * 900).toFloat())
-            path.lineTo(cx + (cos(a1) * 900).toFloat(), cy + (sin(a1) * 900).toFloat())
+            path.lineTo(cx + (cos(a0) * 1200).toFloat(), cy + (sin(a0) * 1200).toFloat())
+            path.lineTo(cx + (cos(a1) * 1200).toFloat(), cy + (sin(a1) * 1200).toFloat())
             path.close()
-            c.drawPath(path, P.f(0x1FFFF3C4))
+            c.drawPath(path, P.f(color))
         }
-        c.drawCircle(cx, cy, 420f, P.glow(cx, cy, 420f, 0xFFFFF3C4.toInt(), 0.9f))
     }
 
-    fun iconForeground(c: Canvas) {
-        // Shri Ram giving his blessing, framed as a close bust inside the adaptive-icon safe zone
+    private fun nightSky(c: Canvas) {
+        c.drawRect(0f, 0f, S, S, P.vgrad3(0f, S, 0xFF140C3A.toInt(), 0xFF3B1A6B.toInt(), 0xFFB8406A.toInt()))
+        val r = kotlin.random.Random(7)
+        repeat(45) { i ->
+            c.drawCircle(r.nextFloat() * S, r.nextFloat() * 620f, 2.5f + (i % 3) * 1.5f, P.f(Color.WHITE, 0.4f + (i % 4) * 0.15f))
+        }
+        c.drawCircle(470f, 470f, 380f, P.glow(470f, 470f, 380f, 0xFFFFD27A.toInt(), 0.55f))
+    }
+
+    private fun medallion(c: Canvas) {
+        c.drawRect(0f, 0f, S, S, P.vgrad(0f, S, 0xFF8E1B2B.toInt(), 0xFF3A0610.toInt()))
+        rays(c, S / 2, S / 2, 0x14FFC93C)
+        c.drawCircle(S / 2, S / 2, 330f, P.glow(S / 2, S / 2, 330f, 0xFFFFB13B.toInt(), 0.75f))
+        c.drawCircle(S / 2, S / 2, 318f, P.s(Ui.GOLD, 14f))
+        c.drawCircle(S / 2, S / 2, 292f, P.s(0xFFFFE9A8.toInt(), 4f))
+        for (k in 0 until 36) {
+            val a = k * 2 * PI / 36
+            c.drawCircle(S / 2 + (cos(a) * 340).toFloat(), S / 2 + (sin(a) * 340).toFloat(), 7f, P.f(Ui.GOLD))
+        }
+    }
+
+    /** Shri Ram giving his blessing, framed as a close bust. */
+    private fun blessing(c: Canvas) {
         val s = 3.3f
         val p = Characters.pose()
         p.blessing = true
         Characters.person(c, S / 2, 470f + 261f * s, s, Characters.RAM, 0.8f, p)
     }
 
-    fun icon(c: Canvas) {
-        iconBackground(c)
-        iconForeground(c)
+    /** Ram drawing his bow towards the sky, arrow ready. */
+    private fun archer(c: Canvas) {
+        val s = 2.15f
+        val aim = -0.6f
+        val x = 400f
+        val y = 445f + 261f * s
+        val p = Characters.pose()
+        p.aim = aim
+        p.drawn = true
+        Characters.person(c, x, y, s, Characters.RAM, 0.8f, p)
+        val h = Characters.bowHand(x, y, s, aim)
+        c.drawCircle(h[0] + cos(aim) * 80f, h[1] + sin(aim) * 80f, 90f, P.glow(h[0] + cos(aim) * 80f, h[1] + sin(aim) * 80f, 90f, 0xFFFFF3C4.toInt(), 0.9f))
+    }
+
+    /** Ram aiming high into the night sky with a glowing golden arrow. */
+    private fun skyArcher(c: Canvas) {
+        val s = 2.0f
+        val aim = -1.0f
+        val x = 420f
+        val y = 500f + 261f * s
+        val p = Characters.pose()
+        p.aim = aim
+        p.drawn = true
+        Characters.person(c, x, y, s, Characters.RAM, 0.8f, p)
+        val h = Characters.bowHand(x, y, s, aim)
+        val tx = h[0] + cos(aim) * 150f
+        val ty = h[1] + sin(aim) * 150f
+        c.drawCircle(tx, ty, 70f, P.glow(tx, ty, 70f, 0xFFFFE082.toInt(), 1f))
+        c.drawCircle(tx, ty, 10f, P.f(0xFFFFF8E1.toInt()))
+    }
+
+    /** Ram's portrait in front of a great golden bow and arrow, like a royal seal. */
+    private fun emblem(c: Canvas) {
+        // the bow, its string and the arrow, crossing behind Ram
+        val dx = 0.7071f
+        val dy = -0.7071f
+        val cx = 430f
+        val cy = 570f
+        val half = 300f
+        val t1x = cx - dy * half; val t1y = cy + dx * half
+        val t2x = cx + dy * half; val t2y = cy - dx * half
+        path.reset()
+        path.moveTo(t1x, t1y)
+        path.quadTo(cx + dx * 380f, cy + dy * 380f, t2x, t2y)
+        c.drawLine(t1x, t1y, t2x, t2y, P.s(0xFFFFF8E1.toInt(), 5f))
+        c.drawPath(path, P.s(0xFF3A0610.toInt(), 40f))
+        c.drawPath(path, P.s(0xFFB8860B.toInt(), 28f))
+        c.drawPath(path, P.s(Ui.GOLD, 14f))
+        c.drawCircle(t1x, t1y, 18f, P.f(Ui.GOLD))
+        c.drawCircle(t2x, t2y, 18f, P.f(Ui.GOLD))
+        c.save()
+        c.translate(cx - dx * 130f, cy - dy * 130f)
+        c.scale(5f, 5f)
+        Characters.arrow(c, 0f, 0f, kotlin.math.atan2(dy, dx), 118f, golden = true)
+        c.restore()
+        val s = 2.75f
+        val p = Characters.pose()
+        p.namaste = true
+        Characters.person(c, 470f, 455f + 261f * s, s, Characters.RAM, 0.8f, p)
+    }
+
+    /** The design used for the launcher and the Play Store. */
+    var chosen = 1
+
+    fun icon(c: Canvas, style: IconStyle = icons[chosen]) {
+        style.background(c)
+        style.foreground(c)
     }
 
     /** Feature graphic, drawn in a 1600 x 781 space (the 1024x500 aspect). */
@@ -105,9 +201,11 @@ object Promo {
     /** All the store art at the sizes needed by Play and the launcher. */
     fun exportAll(dir: File) {
         dir.mkdirs()
-        export(File(dir, "icon_1024.png"), 1024, 1024, S, S) { icon(it) }
-        export(File(dir, "icon_bg_1024.png"), 1024, 1024, S, S) { iconBackground(it) }
-        export(File(dir, "icon_fg_1024.png"), 1024, 1024, S, S, transparent = true) { iconForeground(it) }
+        for ((i, style) in icons.withIndex()) {
+            export(File(dir, "icon${i}_1024.png"), 1024, 1024, S, S) { icon(it, style) }
+            export(File(dir, "icon${i}_bg_1024.png"), 1024, 1024, S, S) { style.background(it) }
+            export(File(dir, "icon${i}_fg_1024.png"), 1024, 1024, S, S, transparent = true) { style.foreground(it) }
+        }
         export(File(dir, "feature_2048x1000.png"), 2048, 1000, V.W, FEATURE_H) { feature(it) }
     }
 }
