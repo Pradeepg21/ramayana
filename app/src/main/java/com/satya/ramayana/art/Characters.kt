@@ -79,6 +79,8 @@ object Characters {
     private const val THIGH = 66f
     private const val SHIN = 62f
     const val HEAD_Y = -261f
+    /** How far back from the bow hand the string is drawn: to the chin. */
+    private const val DRAW_PULL = 112f
     private const val VANAR_K = 0.82f
 
     val RAM = Look(0xFF4A86E8.toInt(), 0xFFFFB300.toInt(), 0xFFE65100.toInt(), halo = true, mala = true)
@@ -143,8 +145,12 @@ object Characters {
         if (drawHead && v == null) hairBack(c, look, child)
         if (v == null && look.crown != CROWN_SAGE) drapeBack(c, look, t, b)
 
-        // back arm (+ Hanuman's gada resting on his shoulder)
-        drawArm(c, -SHOULDER_X * b, armB, skinBack, b, v == null || v.crown, false)
+        // back arm (+ Hanuman's gada resting on his shoulder). When its hand comes in front of the
+        // chest it is drawn over the torso instead: for namaste/catching, and for an archer it goes
+        // on top of everything so the hand visibly holds the drawn string at the chin.
+        val aiming = !p.aim.isNaN()
+        val backInFront = aiming || p.namaste || p.catchPose
+        if (!backInFront) drawArm(c, -SHOULDER_X * b, armB, skinBack, b, v == null || v.crown, false)
         if (v != null && v.gada) {
             when {
                 p.flying -> gada(c, armB[2], armB[3], 160f)
@@ -174,6 +180,7 @@ object Characters {
         neck(c, skin)
         if (look.female) torsoFemale(c, look) else torsoMale(c, look, b, v)
         decorations(c, look, p, b, v)
+        if (backInFront && !aiming) drawArm(c, -SHOULDER_X * b, armB, skinBack, b, v == null || v.crown, false)
 
         // head
         if (drawHead) {
@@ -194,7 +201,10 @@ object Characters {
         // front arm
         drawArm(c, SHOULDER_X * b, armF, skin, b, v == null || v.crown, p.aim.isNaN())
         if (v != null && v.gada && !p.flying && !p.holdGada) gada(c, armF[2], armF[3], 12f)
-        if (!p.aim.isNaN()) bow(c, armF[2], armF[3], p.aim, p.drawn)
+        if (aiming) {
+            bow(c, armF[2], armF[3], p.aim, p.drawn)
+            drawArm(c, -SHOULDER_X * b, armB, skinBack, b, v == null || v.crown, false)
+        }
     }
 
     // --------------------------------------------------------------- skeleton
@@ -246,10 +256,10 @@ object Characters {
                 val dy = sin(p.aim)
                 fx = sfx + dx * 100f
                 fy = sy + dy * 100f
-                // the drawing hand pulls the string back to the chest
-                val pull = if (p.drawn) 66f else 30f
+                // the drawing hand pulls the string all the way back to the chin
+                val pull = if (p.drawn) DRAW_PULL else 30f
                 bx = fx - dx * pull
-                by = fy - dy * pull + 6f
+                by = fy - dy * pull
                 fb = 1f
                 bb = 1f
             }
@@ -285,6 +295,11 @@ object Characters {
         }
         ik(sfx, sy, fx, fy, fb, armF)
         ik(sbx, sy, bx, by, bb, armB)
+        if (!p.aim.isNaN() && p.drawn) {
+            // archer's drawing arm: elbow held out at shoulder height, hand at the chin
+            armB[0] = sbx - 28f; armB[1] = sy + 14f
+            armB[2] = bx; armB[3] = by
+        }
     }
 
     /** Two-bone IK. [bend] picks which side the elbow goes. */
@@ -1172,12 +1187,12 @@ object Characters {
         c.drawPath(path, P.s(0xFF6D3A12.toInt(), 6f))
         c.drawPath(path, P.s(Ui.GOLD, 2.2f))
         c.drawCircle(hx, hy, 5f, P.f(0xFF8D1C1C.toInt()))
-        val pull = if (drawn) 66f else 6f
+        val pull = if (drawn) DRAW_PULL else 6f
         val sx = hx - dx * pull
         val sy = hy - dy * pull
         c.drawLine(tipX1, tipY1, sx, sy, P.s(0xFFFFF8E1.toInt(), 1.4f))
         c.drawLine(tipX2, tipY2, sx, sy, P.s(0xFFFFF8E1.toInt(), 1.4f))
-        if (drawn) arrow(c, sx, sy, aim, 100f, false)
+        if (drawn) arrow(c, sx, sy, aim, pull + 30f, false)
     }
 
     fun arrow(c: Canvas, x: Float, y: Float, angle: Float, len: Float = 110f, golden: Boolean = false) {

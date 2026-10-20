@@ -7,6 +7,7 @@ Every code change must bump the app version in `app/build.gradle.kts`:
 - Add a line to the changelog below with the new version and what changed.
 
 ## Changelog
+- **2.4 (7)** — Ram's string-pulling hand (and both hands in namaste or catching) is now drawn in front of the chest instead of being hidden behind it — fixes the bow pose in the game and the icons.
 - **2.3 (6)** — New launcher and Play Store icon: Shri Ram drawing his bow on a saffron sunburst (chosen from three designs in `play-store/icon-options/`).
 - **2.2 (5)** — Long button labels (e.g. "Continue – Stage 1 · Level 1") now shrink to fit. New launcher icon (Shri Ram on a saffron sunburst, adaptive + round). Debug-only hooks to export store art and 4K screenshots (`--ez promo true`, `--es shot WxH --ef delay s --ei progress n`). Play Store listing, privacy policy and graphics in `play-store/`.
 - **2.1 (4)** — Swayamvar (Stage 3): Levels 1 and 2 now end with Ram holding the strung bow high; Shiva's bow only breaks on Level 3, just before the wedding.
