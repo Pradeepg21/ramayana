@@ -47,7 +47,7 @@ class StoryScreen(game: Game, private val stage: Int, private val level: Int = 1
 
     private val nextBtn = Button("Next", 1330f, 800f, 260f, 84f, Button.PRIMARY, "") { next() }
     private val skipBtn = Button("Skip", 1050f, 800f, 200f, 84f, Button.SECONDARY) { start() }
-    private val backBtn = Button("Map", 120f, 70f, 180f, 70f, Button.SECONDARY, "◀") { game.go(MapScreen(game)) }
+    private val backBtn = Button("Map", 120f, 70f, 180f, 70f, Button.SECONDARY, "◀") { game.go(MapScreen(game, level)) }
     private val voiceBtn = Button("", 400f, 760f, 300f, 70f, Button.SECONDARY) {
         game.toggleVoice()
         if (game.save.voiceOn) speakPage()
@@ -81,7 +81,7 @@ class StoryScreen(game: Game, private val stage: Int, private val level: Int = 1
     }
 
     override fun onBack(): Boolean {
-        game.go(MapScreen(game))
+        game.go(MapScreen(game, level))
         return true
     }
 
@@ -221,19 +221,16 @@ class ResultScreen(
         fireworks.active = success
         fireworks.rate = 0.55f
         if (success) {
-            when {
-                level < Stages.LEVELS -> buttons.add(Button("Next Level", 1080f, 800f, 380f, 92f, Button.GREEN, "▶") {
-                    game.go(StoryScreen(game, stage, level + 1))
-                })
-                stage < Stages.COUNT -> buttons.add(Button("Next Stage", 1080f, 800f, 380f, 92f, Button.GREEN, "▶") {
-                    game.go(StoryScreen(game, stage + 1, 1))
+            if (stage < Stages.COUNT) {
+                buttons.add(Button("Next Stage", 1080f, 800f, 380f, 92f, Button.GREEN, "▶") {
+                    game.go(StoryScreen(game, stage + 1, level))
                 })
             }
             buttons.add(Button("Replay", 720f, 800f, 260f, 92f, Button.PRIMARY) { game.go(Stages.create(game, stage, level)) })
-            buttons.add(Button("Map", 440f, 800f, 220f, 92f, Button.SECONDARY) { game.go(MapScreen(game)) })
+            buttons.add(Button("Map", 440f, 800f, 220f, 92f, Button.SECONDARY) { game.go(MapScreen(game, level)) })
         } else {
             buttons.add(Button("Try Again", 940f, 760f, 380f, 92f, Button.GREEN, "↻") { game.go(Stages.create(game, stage, level)) })
-            buttons.add(Button("Map", 610f, 760f, 220f, 92f, Button.SECONDARY) { game.go(MapScreen(game)) })
+            buttons.add(Button("Map", 610f, 760f, 220f, 92f, Button.SECONDARY) { game.go(MapScreen(game, level)) })
         }
     }
 
@@ -250,7 +247,7 @@ class ResultScreen(
     }
 
     override fun onBack(): Boolean {
-        game.go(MapScreen(game))
+        game.go(MapScreen(game, level))
         return true
     }
 
@@ -277,8 +274,7 @@ class ResultScreen(
 
         Ui.panel(c, 260f, 70f, V.W - 260f, if (success) 720f else 680f)
         if (success) {
-            val head = if (level < Stages.LEVELS) "Level $level Complete!" else "Stage ${info.num} Complete!"
-            Ui.title(c, head, V.W / 2, 170f, 80f)
+            Ui.title(c, "Stage ${info.num} Complete!", V.W / 2, 170f, 80f)
             val shown = ((time - 0.6f) / 0.4f).toInt().coerceIn(0, stars)
             for (k in 0 until 3) {
                 val pop = if (k < shown) 1f + 0.15f * sin((time - 0.6f - k * 0.4f).coerceAtLeast(0f) * 8f) * (1f - ((time - 0.6f - k * 0.4f) / 1f).coerceIn(0f, 1f)) else 1f
@@ -294,8 +290,8 @@ class ResultScreen(
                 Ui.text(c, "Use it once in each coming stage when you need help.", V.W / 2, 650f, 30f, Ui.CREAM, face = P.sans)
             } else if (stage == 7 && level == 1) {
                 Ui.text(c, "King Sugriv promises his whole army to help Ram!", V.W / 2, 630f, 34f, 0xFFFFE082.toInt(), face = P.sans)
-            } else if (level < Stages.LEVELS) {
-                Ui.text(c, "Level ${level + 1} is now open – it will be faster!", V.W / 2, 640f, 32f, 0xFFFFE082.toInt(), face = P.sans)
+            } else if (stage < Stages.COUNT) {
+                Ui.text(c, "Stage ${stage + 1} is now open!", V.W / 2, 640f, 32f, 0xFFFFE082.toInt(), face = P.sans)
             }
         } else {
             Ui.title(c, if (reason.isEmpty()) "Time Up!" else reason, V.W / 2, 200f, 80f)
@@ -310,12 +306,12 @@ class ResultScreen(
 }
 
 /** Ram–Sita Vivah celebration after the bow is broken. */
-class VivahScreen(game: Game, private val stars: Int, private val score: Int) : Screen(game) {
+class VivahScreen(game: Game, private val level: Int, private val stars: Int, private val score: Int) : Screen(game) {
     private val petals = Particles(700)
     private val fireworks = Fireworks(game.audio)
     private var belled = false
     private val cont = Button("Continue", V.W / 2, 830f, 340f, 86f, Button.GREEN, "▶") {
-        game.go(ResultScreen(game, 3, Stages.LEVELS, true, stars, score))
+        game.go(ResultScreen(game, 3, level, true, stars, score))
     }
 
     init {
@@ -399,15 +395,22 @@ class VivahScreen(game: Game, private val stars: Int, private val score: Int) : 
 }
 
 /** The grand finale: Ram returns to Ayodhya and the city lights up for Diwali. */
-class DiwaliScreen(game: Game, private val stars: Int, private val score: Int) : Screen(game) {
+class DiwaliScreen(game: Game, private val level: Int, private val stars: Int, private val score: Int) : Screen(game) {
     private val fireworks = Fireworks(game.audio)
     private val petals = Particles(500)
-    private val again = Button("Stage Map", V.W / 2 - 220f, 840f, 340f, 84f, Button.PRIMARY) { game.go(MapScreen(game)) }
-    private val menu = Button("Main Menu", V.W / 2 + 220f, 840f, 340f, 84f, Button.SECONDARY) { game.go(MenuScreen(game)) }
+    private val hasNext = level < Stages.LEVELS
+    private val again = Button("Stage Map", V.W / 2 - (if (hasNext) 380f else 220f), 840f, 320f, 84f, Button.PRIMARY) {
+        game.go(MapScreen(game, level))
+    }
+    private val menu = Button("Main Menu", V.W / 2 + (if (hasNext) 380f else 220f), 840f, 320f, 84f, Button.SECONDARY) { game.go(MenuScreen(game)) }
+    private val nextLevel = Button("Level ${level + 1}", V.W / 2, 840f, 340f, 92f, Button.GREEN, "▶") {
+        game.go(StoryScreen(game, 1, level + 1))
+    }
 
     init {
         buttons.add(again)
         buttons.add(menu)
+        if (hasNext) buttons.add(nextLevel)
         fireworks.rate = 0.35f
         fireworks.active = false
     }
@@ -490,8 +493,10 @@ class DiwaliScreen(game: Game, private val stars: Int, private val score: Int) :
         }
         if (time > 6f) {
             val a = ((time - 6f) / 1f).coerceAtMost(1f)
-            Ui.text(c, "You completed the Ramayana!  ⭐ ${game.save.totalStars} / ${game.save.maxStars}   Score $score",
-                V.W / 2 - 180f, 320f, 34f, Color.WHITE, outline = Color.BLACK, alpha = a)
+            val done = if (hasNext) "You completed Level $level!  Level ${level + 1} is now open." else "You completed the Ramayana – all 3 levels!"
+            Ui.text(c, done, V.W / 2 - 180f, 320f, 34f, Color.WHITE, outline = Color.BLACK, alpha = a)
+            Ui.text(c, "⭐ ${game.save.totalStars} / ${game.save.maxStars}   Score $score",
+                V.W / 2 - 180f, 430f, 30f, Ui.GOLD, outline = Color.BLACK, alpha = a)
             Ui.text(c, "Good always wins over evil – that is why we light diyas on Diwali.",
                 V.W / 2 - 220f, 375f, 28f, Ui.CREAM, outline = Color.BLACK, alpha = a)
         }

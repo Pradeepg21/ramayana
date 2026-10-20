@@ -78,23 +78,16 @@ class SwayamvarStage(game: Game, level: Int = 1) : BaseStage(game, Stages.info(3
 
     override fun win() {
         super.win()
-        if (level < Stages.LEVELS) {
-            // earlier levels: Ram holds the strung bow high; it only breaks on the final level
-            game.audio.play(Sfx.POWER)
-            fx.burst(840f, 290f, intArrayOf(0xFF80D8FF.toInt(), Ui.GOLD), 70, 600f, 7f, 40f)
-            return
-        }
         broken = 0f
         game.audio.play(Sfx.BREAK)
         fx.burst(800f, 380f, intArrayOf(0xFFFFFFFF.toInt(), 0xFF80D8FF.toInt(), Ui.GOLD), 120, 900f, 9f, 50f)
     }
 
     override fun afterWin() {
-        if (level < Stages.LEVELS) return super.afterWin()
         val st = stars()
         val total = score + (timeLeft.coerceAtLeast(0f) * 20).toInt()
         game.save.completeLevel(info.num, level, st, total)
-        game.go(VivahScreen(game, st, total))
+        game.go(VivahScreen(game, level, st, total))
     }
 
     override fun drawWorld(c: Canvas) {

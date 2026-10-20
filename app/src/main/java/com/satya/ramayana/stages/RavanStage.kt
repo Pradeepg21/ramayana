@@ -165,11 +165,10 @@ class RavanStage(game: Game, level: Int = 1) : BaseStage(game, Stages.info(10), 
     }
 
     override fun afterWin() {
-        if (level < Stages.LEVELS) return super.afterWin()
         val st = stars()
         val total = score + (timeLeft.coerceAtLeast(0f) * 20).toInt()
         game.save.completeLevel(info.num, level, st, total)
-        game.go(DiwaliScreen(game, st, total))
+        game.go(DiwaliScreen(game, level, st, total))
     }
 
     override fun drawWorld(c: Canvas) {

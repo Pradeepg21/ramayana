@@ -106,12 +106,14 @@ class MenuScreen(game: Game) : Screen(game) {
         game.go(StoryScreen(game, st, l))
     }
 
-    /** Where "Continue" picks up: the last level played, if it is still open. */
+    /** Where "Continue" picks up: the last stage played, if it is still open, else the next one to play. */
     private fun resumePoint(): Pair<Int, Int> {
         val s = game.save
-        val st = s.lastStage.coerceIn(1, s.unlocked)
-        val l = if (s.isUnlocked(st, s.lastLevel)) s.lastLevel else s.unlockedLevel(st)
-        return st to l
+        return when {
+            s.lastStage in 1..Stages.COUNT && s.isUnlocked(s.lastStage, s.lastLevel) -> s.lastStage to s.lastLevel
+            s.gameCompleted -> 1 to 1
+            else -> s.frontier
+        }
     }
 
     private fun newJourney() {
@@ -165,8 +167,14 @@ class MenuScreen(game: Game) : Screen(game) {
     }
 }
 
-/** Stage map: a winding path of 10 medallions, like a classic level map. */
-class MapScreen(game: Game) : Screen(game) {
+/**
+ * Stage map: a winding path of 10 medallions, like a classic level map, with a tab for
+ * each level. Level 2 opens after all of Level 1, Level 3 after all of Level 2.
+ */
+class MapScreen(game: Game, level: Int = 0) : Screen(game) {
+    private var level = if (level > 0) level else defaultLevel()
+    private var lockedMsg = -1f
+
     private val path = Path()
     private val shortNames = arrayOf(
         "Gurukul", "Yagna", "Swayamvar", "Vanvas", "Find Sita",
@@ -174,8 +182,45 @@ class MapScreen(game: Game) : Screen(game) {
     )
     private fun pos(i: Int): Pair<Float, Float> = (140f + i * 147f) to (500f + sin(i * 1.15f) * 170f)
 
+    private val levelBtns = (1..Stages.LEVELS).map { l ->
+        Button("Level $l", V.W / 2 + (l - 2) * 260f, 178f, 240f, 64f, Button.PRIMARY) { pickLevel(l) }
+    }
+
     init {
         buttons.add(Button("Menu", 130f, 70f, 200f, 76f, Button.SECONDARY, "◀") { game.go(MenuScreen(game)) })
+        buttons.addAll(levelBtns)
+        updateTabs()
+    }
+
+    /** The level being played now: the last one played if open, else the highest open level. */
+    private fun defaultLevel(): Int {
+        val s = game.save
+        return if (s.lastLevel <= s.unlockedLevel) s.lastLevel else s.unlockedLevel
+    }
+
+    private fun pickLevel(l: Int) {
+        if (l <= game.save.unlockedLevel) {
+            level = l
+            lockedMsg = -1f
+            updateTabs()
+        } else {
+            game.audio.play(Sfx.WRONG)
+            lockedMsg = time
+        }
+    }
+
+    private fun updateTabs() {
+        for ((i, b) in levelBtns.withIndex()) {
+            val l = i + 1
+            val open = l <= game.save.unlockedLevel
+            b.style = when {
+                l == level -> Button.GREEN
+                open -> Button.PRIMARY
+                else -> Button.GRAY
+            }
+            b.label = if (open) "Level $l" else "Level $l 🔒"
+            b.textSize = 28f
+        }
     }
 
     override fun enter() {
@@ -192,9 +237,9 @@ class MapScreen(game: Game) : Screen(game) {
         for (i in 0 until Stages.COUNT) {
             val (px, py) = pos(i)
             if (hypot(px - x, py - y) < 75f) {
-                if (i + 1 <= game.save.unlocked) {
+                if (game.save.isUnlocked(i + 1, level)) {
                     game.audio.play(Sfx.CLICK)
-                    game.go(StoryScreen(game, i + 1, levelToPlay(i + 1)))
+                    game.go(StoryScreen(game, i + 1, level))
                 } else {
                     game.audio.play(Sfx.WRONG)
                 }
@@ -203,19 +248,16 @@ class MapScreen(game: Game) : Screen(game) {
         }
     }
 
-    /** The first open level of a stage that is not finished yet, or level 1 to replay a finished stage. */
-    private fun levelToPlay(stage: Int): Int {
-        val s = game.save
-        return (1..s.unlockedLevel(stage)).firstOrNull { !s.levelDone(stage, it) } ?: 1
-    }
-
     override fun draw(c: Canvas) {
         c.drawRect(0f, 0f, V.W, V.H, P.vgrad(0f, V.H, 0xFF3A0610.toInt(), 0xFF1A0306.toInt()))
         Ui.parchment(c, 30f, 120f, V.W - 30f, V.H - 20f)
         Ui.title(c, "The Journey of Shri Ram", V.W / 2, 95f, 66f)
         val save = game.save
         Ui.text(c, "⭐ ${save.totalStars} / ${save.maxStars}", V.W - 160f, 80f, 38f, Color.WHITE, outline = Color.BLACK)
-        if (save.hanumanShakti) {
+        if (lockedMsg >= 0f && time - lockedMsg < 2.5f) {
+            val need = save.unlockedLevel
+            Ui.text(c, "🔒 Finish all 10 stages of Level $need to open Level ${need + 1}", V.W / 2, 860f, 32f, Ui.RED, face = P.serifBold)
+        } else if (save.hanumanShakti) {
             Ui.text(c, "🙏 Hanuman Shakti earned", V.W / 2, 860f, 32f, Ui.MAROON, face = P.serifBold)
         }
 
@@ -236,8 +278,8 @@ class MapScreen(game: Game) : Screen(game) {
         for (i in 0 until Stages.COUNT) {
             val n = i + 1
             val (x, y) = pos(i)
-            val unlocked = n <= save.unlocked
-            val current = n == save.unlocked && !save.gameCompleted
+            val unlocked = save.isUnlocked(n, level)
+            val current = save.isFrontier(n, level)
             if (current) {
                 val pulse = 1f + 0.08f * sin(time * 5f)
                 c.drawCircle(x, y, 110f * pulse, P.glow(x, y, 110f * pulse, 0xFFFF9800.toInt(), 0.9f))
@@ -248,8 +290,9 @@ class MapScreen(game: Game) : Screen(game) {
                 c.drawCircle(x, y, 62f, P.s(Ui.MAROON, 5f))
                 c.drawCircle(x, y, 50f, P.s(0xFFFFF3C4.toInt(), 2f))
                 Ui.text(c, "$n", x, y + 22f, 64f, Color.WHITE, outline = Ui.MAROON_DARK)
-                // one star per finished level
-                for (k in 0 until Stages.LEVELS) Ui.star(c, x - 36f + k * 36f, y + 80f, 17f, save.levelDone(n, k + 1))
+                // stars earned on this level
+                val st = save.stars(n, level)
+                for (k in 0 until 3) Ui.star(c, x - 36f + k * 36f, y + 80f, 17f, k < st)
             } else {
                 c.drawCircle(x, y, 62f, P.vgrad(y - 62f, y + 62f, 0xFF9E9E9E.toInt(), 0xFF5E5E5E.toInt()))
                 c.drawCircle(x, y, 62f, P.s(0xFF424242.toInt(), 5f))

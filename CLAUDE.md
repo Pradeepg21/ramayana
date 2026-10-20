@@ -7,6 +7,7 @@ Every code change must bump the app version in `app/build.gradle.kts`:
 - Add a line to the changelog below with the new version and what changed.
 
 ## Changelog
+- **2.5 (8)** — Levels now go in order across the whole journey: all 10 stages of Level 1, then all 10 of Level 2, then Level 3. The stage map has Level 1/2/3 tabs from the start; Level 2 and 3 are locked until the previous level is fully done. After finishing everything, all levels stay open (even after New Journey) until the app is reinstalled. Sita Vivah and Diwali now play at the end of every level's pass (Diwali offers the next level). Old saves keep their progress.
 - **2.4 (7)** — Ram's string-pulling hand (and both hands in namaste or catching) is now drawn in front of the chest instead of being hidden behind it — fixes the bow pose in the game and the icons.
 - **2.3 (6)** — New launcher and Play Store icon: Shri Ram drawing his bow on a saffron sunburst (chosen from three designs in `play-store/icon-options/`).
 - **2.2 (5)** — Long button labels (e.g. "Continue – Stage 1 · Level 1") now shrink to fit. New launcher icon (Shri Ram on a saffron sunburst, adaptive + round). Debug-only hooks to export store art and 4K screenshots (`--ez promo true`, `--es shot WxH --ef delay s --ei progress n`). Play Store listing, privacy policy and graphics in `play-store/`.

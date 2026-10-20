@@ -37,7 +37,7 @@ Every stage is a scene from the Ramayana with its own simple tap-and-play game:
 • The Final Battle – break Ravan's pride as good wins over evil in Lanka
 
 ★ 30 LEVELS THAT GROW WITH YOUR CHILD
-Each stage has 3 levels that unlock in order. Every level is a little faster with a slightly bigger goal, so young players build skill and confidence step by step. Collect up to 3 stars in every level – 90 stars in all!
+Finish all 10 stages to unlock Level 2, then replay the whole journey a little faster with bigger goals. Complete Level 2 to unlock Level 3, the ultimate challenge! Young players build skill and confidence step by step. Collect up to 3 stars in every stage of every level – 90 stars in all!
 
 ★ STORIES READ ALOUD
 A warm Indian-English narrator reads every story page, fact and lesson aloud, so even children who are just learning to read can enjoy the journey. Narration can be switched on or off at any time.

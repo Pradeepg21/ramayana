@@ -26,10 +26,10 @@ class StageInfo(
     /** Knowledge and lesson for one of the 3 levels. */
     fun level(l: Int) = Stages.levels[num - 1][(l - 1).coerceIn(0, Stages.LEVELS - 1)]
 
-    /** The lesson learnt just before this level: the previous level, or the last level of the previous stage. */
+    /** The lesson learnt just before this: the previous stage on the same level, or the final stage of the previous level. */
     fun previousLesson(l: Int): String? = when {
-        l > 1 -> level(l - 1).lesson
-        num > 1 -> Stages.info(num - 1).level(Stages.LEVELS).lesson
+        num > 1 -> Stages.info(num - 1).level(l).lesson
+        l > 1 -> Stages.info(Stages.COUNT).level(l - 1).lesson
         else -> null
     }
 }
